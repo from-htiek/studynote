@@ -19,11 +19,12 @@
 		- 두 집합을 합칠 때 rank가 낮은 집합을 rank가 높은 집합에 붙임
 	2. Path compression
 		- findSet을 하는 과정에서 만나는 모든 노드들이 직접 루트를 가리키도록 포인터를 바꾸어주기
-		<img src="img/unionfind_1.jpg" width="85%" height="85%">
+		<img src="img/unionfind_1.jpg" width="50%" height="50%">
 <br/> 
+  
 - 코드
 	1. makeSet
-	```
+	```java
 	// 단위 집합 생성
 	public  static  void  makeSet()  {
 		parents =  new  int[n];
@@ -34,9 +35,9 @@
 		}
 	}
 	```
-
+	
 	2. findSet
-	```
+	```java
 	// a의 집합 찾기 : a의 대표자 찾기
 	public  static  int  findSet(int  a)  {
 		// 스스로가 대표자 일 때
@@ -48,9 +49,8 @@
 		// parents[a] = findSet(a) => 이렇게 쓰면 실수! 무한 루프
 	}
 	```
-
 	3. union
-	```
+	```java
 	// a, b 두 집합 합치기
 	// 합쳐진다면 true, 합치지 못한다면 false
 	public  static  boolean  union(int  a,  int  b)  {
@@ -66,6 +66,7 @@
 		return  true;
 	}
 	```
+
 
 참고 및 이미지 : 
 https://hideoushumpbackfreak.com/algorithms/data-struct-union-find
