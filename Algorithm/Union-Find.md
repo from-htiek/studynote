@@ -66,7 +66,9 @@
 		return  true;
 	}
 	```
-
+- 유의점
+	- 하나의 집합이라고 해서 parent 배열이 똑같은 것은 아님
+	- ex) [2, 0, 3, 4, 4]는 4번 노드가 루트노드이고 순서대로 4-3-2-0-1로 이어진 하나의 집합
 
 참고 및 이미지 : 
 https://hideoushumpbackfreak.com/algorithms/data-struct-union-find
