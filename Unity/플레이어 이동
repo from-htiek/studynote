@@ -1,0 +1,270 @@
+﻿## Unity 게임 오브젝트의 흐름
+1. Awake : 게임 오브젝트 생성할 때, 최초 실행
+2. OnEable : 게임 오브젝트가 활성화 되었을 때
+3. Start : 업데이트 시작 직전, 최초 실행
+4. FixedUpdate : 물리 연산 업데이트, 고정된 실행주기로 **CPU를 많이 사용**, 
+5. Update : 게임 로직 업데이트, 물리 연산 관련 제외한 나머지 부분 중 주기적으로 변하는 함수, 환경에 따라 **실행 주기가 떨어질 수 있음**, 통상적으로 1초에 60번씩 실행
+6. LateUpdate : 모든 업데이트가 끝난 후 실행, 카메라나 후처리 부분 
+7. OnDisable : 게임 오브젝트가 비활성화 되었을 때
+8. OnDestroy: 게임 오브젝트가 삭제 될 때
+```C#
+public  class  Lifecycle : MonoBehaviour{
+
+	void Awake(){
+		Debug.Log("플레이어 데이터가 준비");
+	}
+	
+	void OnEable(){
+		Debug.Log("플레이어 로그인");
+	}
+	
+	void Start(){
+		Debug.Log("사냥 장비 챙김");
+	}
+	
+	void FixedUpdate(){
+		Debug.Log("이동");
+	}
+	
+	void Update(){
+		Debug.Log("몬스터 사냥");
+	}
+	
+	void LateUpdate(){
+		Debug.Log("경험치 획득");
+	}
+
+	void OnDisable(){
+		Debug.Log("플레이어 로그아웃");
+	}
+
+	void OnDestroy(){
+		Debug.Log("플레이어 데이터 해제");
+	}
+}
+```
+<br/>
+
+## 키보드, 마우스 입력
+- 입력은 키를 누를 때 (Down), 키를 누르고 있을 때(Stay), 키를 눌렀다가 뗄 때(Up)으로 구분 
+- Input : 게임 내 입력을 관리하는 클래스
+- `Input .anyKeyDown` : 아무 입력을 최초로 받을 때 `true`
+- `Input.anyKey` : 아무 입력을 받을 때 `true`
+- `Input.GetKeyDown` : 키보드 버튼 입력 받으면 `true`
+- `Input.GetKey` 키를 누르고 있을 때
+- `Input.GetKeyUp` : 키를 눌렀다가 뗄 때
+- `Input.GetMouse` : 마우스 버튼 입력 받으면 `true`
+- Input Manager에서 Button 설정 가능
+	- `Input.GetButton` 사용
+	- `Input.GetAxis` : float 값 반환
+	- `Input.GetAxiosRaw` : 정수 값 반환
+```c#
+    void Update(){
+        if (Input.anyKey) Debug.Log("플레이어가 아무 키 누름");
+
+        // 엔터 입력 : KeyCode.Return
+        if (Input.GetKeyDown(KeyCode.Return)) Debug.Log("아이템 구입 완료");
+
+        if (Input.GetKey(KeyCode.LeftArrow)) Debug.Log("왼쪽으로 이동 중");
+
+        if (Input.GetKeyUp(KeyCode.RightArrow)) Debug.Log("오른쪽 이동 멈춤");
+
+        // 0 : 마우스 왼쪽, 1 : 마우스 오른쪽
+        if (Input.GetMouseButtonDown(0)) Debug.Log("미사일 발사");
+
+        if (Input.GetMouseButton(0)) Debug.Log("미사일 모으는 중");
+
+        if (Input.GetMouseButtonUp(0)) Debug.Log("미사일 발사");
+
+        if (Input.GetButton("Jump")) Debug.Log("점프");
+
+        if (Input.GetButton("Horizontal"))
+        {
+            Debug.Log("횡 이동 중" + Input.GetAxisRaw("Horizontal"); 
+        }
+    }
+```
+<br/>
+
+## 오브젝트 이동
+- transform 
+	- 어떤 오브젝트를 만들어도 같이 만들어짐
+	- 오브젝트와 1:1 관계
+	-  **오브젝트 형태**에 대한 기본 컴포넌트 
+	- 오브젝트는 변수 `transform`을 항상 가짐
+```c#
+    private void Update()
+    {
+        Vector3 vec = new Vector3(Input.GetAxis("Horizontal"), Input.GetAxis("Vertical"), 0);
+
+        // 벡터 값을 현재 위치에 더하는 함수
+        transform.Translate(vec);
+
+    }
+```
+<br/>
+
+## 3D 기초 구현
+### 1. 지형 만들기
+- 만든 물체에 빛이 없을 때 Window - Rendering - Generate Lighting으로 밝게 만들 수 있음
+- 오브젝트 복사 : Ctrl + D
+- Mesh Renderer : 비활성화하면 보이지 않음
+- 오브젝트 재질 변경
+	- Create - Material - Albedo : 텍스쳐 이미지 선택 가능 
+	- Tiling 값 변경 해 타일형태로 배치 가능
+	
+### 2. 플레이어 만들기
+- Prefab : 게임 오브젝트를 에셋으로 보관한 형태
+- Player에서 필요한 컴포넌트 : `Collider` + `Rigidbody` + `Script`
+- Collider는 Capsule Collider 사용, 플레이어에 맞게 위치, 크기 조절
+-  관성에 의한 쓰러짐은 Rigidbody의 `Freeze Rotation`으로 해결
+	- x, z 체크
+- 벽과의 충돌 시 뚫고 나가게 하지 않기 위해 `Rigidbody`의 `Collision Detection`을 `Continuous`로 변경
+
+### 3. 이동 구현
+```c#
+public class Player : MonoBehaviour 
+{     
+    public float speed;
+    float hAxis;
+    float vAxis;
+    
+    Vector3 moveVec;
+    void Update()
+    {
+        hAxis = Input.GetAxisRaw("Horizontal");
+        vAxis = Input.GetAxisRaw("Vertical");
+
+        // 버튼을 동시에 눌렀을 때 이동 값 보정해주기위해 normalized 사용
+        // normalized : 방향 값이 1로 보정된 벡터
+        moveVec = new Vector3(hAxis, 0, vAxis).normalized;
+    }   
+}
+```
+### 4. 애니메이션
+1. Create - Animation Controller로 Animator 생성
+2. Player의 `Mesh Object`에 Animator 넣기
+3. `Animator` 클릭 후 설정 창으로 이동 
+4. 에셋의 Models에 필요한 애니메이션 넣기
+	- `.FBX` : 각 종 정보들이 구분되어 저장되는 3D 포맷
+5. 애니메이션 상태 사이를 `Transition`으로 연결
+6. 파라미터를 `Condition`에 사용하여 `Transition` 연결
+	- `Has Exit Time` 설정 off
+	- `Setting`에 `Transition Duration` 0.1로 설정
+7. Transition 변수 설정
+	- Idle => Run : isRun true / isWalk true
+	- Run => Idle : isWalk false
+	- idle => Walk : isWalk true
+	- Walk => Idel : isWalke false
+	- Walk => Run : isRun true
+	- Run => Walk : isRun false
+	<img src="img/unity_character_1.png" width="70%" height="70%">
+```c#
+    bool wDown;
+    Animator anim; 
+    void Awake()
+    {
+        // Animator 초기화는 Awake에서 할 것 
+        anim = GetComponentInChildren<Animator>(); 
+    }
+    void Update()
+    {
+	    // Input Manager에 값 추가 
+	    wDown = Input.GetButton("Walk");
+	    anim.SetBool("isRun", wDown);
+        anim.SetBool("isWalk", moveVec != Vector3.zero);
+     }
+```
+<br/>
+
+### 5. 기본 회전
+```c#
+    void Update()
+    {
+        // 회전
+        // LookAt : 지정된 벡터를 향해서 회전시켜주는 함수
+        // transform.position + moveVec : 나아가는 방향으로 바라보기
+        transform.LookAt(transform.position + moveVec);
+    }   
+```
+<br/>
+
+### 6. Player 전체 코드
+<img src="img/unity_character_2.gif" width="70%" height="70%">
+
+```c#
+using System.Collections;
+using System.Collections.Generic;
+using UnityEngine;
+
+public class Player : MonoBehaviour 
+{     
+    public float speed;
+    float hAxis;
+    float vAxis;
+    bool wDown;
+
+    Vector3 moveVec;
+
+    Animator anim; 
+    void Awake()
+    {
+        // Animator 초기화는 Awake에서 할 것 
+        anim = GetComponentInChildren<Animator>(); 
+    }
+
+    void Update()
+    {
+        hAxis = Input.GetAxisRaw("Horizontal");
+        vAxis = Input.GetAxisRaw("Vertical");
+        wDown = Input.GetButton("Walk");
+
+        // 버튼을 동시에 눌렀을 때 이동 값 보정해주기위해 normalized 사용
+        // normalized : 방향 값이 1로 보정된 벡터
+        moveVec = new Vector3(hAxis, 0, vAxis).normalized;
+
+        if(wDown)
+            transform.position += moveVec * speed * 2f * Time.deltaTime;
+        else 
+            transform.position += moveVec * speed * Time.deltaTime;
+
+        anim.SetBool("isRun", wDown);
+        anim.SetBool("isWalk", moveVec != Vector3.zero);
+
+        // 회전
+        // LookAt : 지정된 벡터를 향해서 회전시켜주는 함수
+        // transform.position + moveVec : 나아가는 방향으로 바라보기
+        transform.LookAt(transform.position + moveVec);
+    }   
+
+}
+```
+
+
+### 7. 카메라 이동
+- 따라갈 목표와 위치 오프셋을 public 변수로 선언
+```c#
+public class Follow : MonoBehaviour
+{
+    public Transform target;
+    public Vector3 offset;
+
+    void Start()
+    {
+        
+    }
+
+    void Update()
+    {
+        transform.position = target.position + offset;
+
+    }
+}
+```
+- target을 Player로 설정
+- 해당 Script를 Main Camera로 설정 
+
+
+
+참고 강의 :   
+https://www.youtube.com/watch?v=WkMM7Uu2AoA&list=PLO-mt5Iu5TeYI4dbYwWP8JqZMC9iuUIW2&index=43
